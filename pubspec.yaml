@@ -14,12 +14,23 @@ dependencies:
   # HTTP通信
   http: ^0.13.5
 
+  # アノテーション
+  freezed_annotation: ^2.1.0
+  json_annotation: ^4.6.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
 
   # 静的解析
   pedantic_mono: ^1.19.2
+
+  # コード生成
+  build_runner: ^2.2.0
+  freezed: ^2.1.0+1
+
+  # JSON
+  json_serializable: ^6.3.1
 
 flutter:
   uses-material-design: true
