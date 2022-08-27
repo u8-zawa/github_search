@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -47,16 +48,22 @@ class _MyHomePageState extends State<MyHomePage> {
       '/search/repositories',
       <String, dynamic>{'q': q},
     );
-    final client = http.Client();
     try {
-      final response = await client.get(url);
+      final response = await http.get(url);
+      if (response.statusCode != 200) {
+        throw HttpException('${response.statusCode}');
+      }
       final responseJson = json.decode(response.body) as Map<String, dynamic>;
       final result = SearchReposResult.fromJson(responseJson);
       setState(() {
         repos = result.items;
       });
-    } finally {
-      client.close();
+    } on SocketException catch (e) {
+      debugPrint(e.toString());
+    } on HttpException catch (e) {
+      debugPrint(e.toString());
+    } on FormatException catch (e) {
+      debugPrint(e.toString());
     }
   }
 
@@ -66,7 +73,6 @@ class _MyHomePageState extends State<MyHomePage> {
       appBar: AppBar(
         title: TextField(
           textInputAction: TextInputAction.search,
-          onChanged: _searchRepos,
           onSubmitted: _searchRepos,
         ),
       ),
