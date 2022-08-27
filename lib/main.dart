@@ -20,15 +20,13 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      home: const MyHomePage(),
     );
   }
 }
 
 class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-
-  final String title;
+  const MyHomePage({super.key});
 
   @override
   State<MyHomePage> createState() => _MyHomePageState();
@@ -36,41 +34,67 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   List<GithubRepo> repos = [];
+  final scrollController = ScrollController();
 
-  Future<List<GithubRepo>> _requestAPI(String q) async {
+  Future<void> _searchRepos(String q) async {
+    // 検索キーワードが空白の場合、通信はしない
+    if (q == '') {
+      return;
+    }
+
     final url = Uri.https(
       'api.github.com',
       '/search/repositories',
       <String, dynamic>{'q': q},
     );
-    final response = await http.get(url);
-
-    if (response.statusCode == 200) {
+    final client = http.Client();
+    try {
+      final response = await client.get(url);
       final responseJson = json.decode(response.body) as Map<String, dynamic>;
       final result = SearchReposResult.fromJson(responseJson);
-      return result.items;
-    } else {}
-    return [];
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    Future(() async {
-      repos = await _requestAPI('flutter');
-    });
+      setState(() {
+        repos = result.items;
+      });
+    } finally {
+      client.close();
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.title),
-      ),
-      body: Center(
-        child: Text(
-          repos.isNotEmpty ? repos.first.htmlUrl : 'Empty',
+        title: TextField(
+          textInputAction: TextInputAction.search,
+          onChanged: _searchRepos,
+          onSubmitted: _searchRepos,
         ),
+      ),
+      body: ListView.separated(
+        controller: scrollController,
+        itemBuilder: (BuildContext context, int index) {
+          final repo = repos[index];
+          return ListTile(
+            leading: CircleAvatar(
+              backgroundColor: Colors.white,
+              backgroundImage: repo.owner != null
+                  ? NetworkImage(repo.owner!.avatarUrl)
+                  : null,
+            ),
+            title: Text(repo.name),
+            subtitle: repo.description != null
+                ? Text(
+                    repo.description!,
+                    overflow: TextOverflow.ellipsis,
+                  )
+                : null,
+            onTap: () {},
+          );
+        },
+        separatorBuilder: (BuildContext context, int index) {
+          return const Divider(height: 1);
+        },
+        itemCount: repos.length,
       ),
     );
   }
